@@ -21,12 +21,18 @@ import java.util.List;
 import org.opencv.imgcodecs.*; // imread, imwrite, etc
 
 public class ProcessMilkStrip {
+    public double resultR;
+    public double resultG;
+    public double resultB;
     ProcessMilkStrip() {
     }
 
-    public Mat find_rectangle(CameraBridgeViewBase.CvCameraViewFrame inputFile) {
-        Mat coloredInputOriginal = inputFile.rgba();
-        Mat grayInputOriginal = inputFile.gray();
+    public Mat find_rectangle(Mat input) {
+        Mat coloredInputOriginal = input;
+        Mat grayInputOriginal = new Mat();
+        Imgproc.cvtColor(coloredInputOriginal,grayInputOriginal,Imgproc.COLOR_RGB2GRAY);
+
+        Mat coloredInputCopy = input.clone();
 
         // Copy to temp mats
         Mat coloredInput = new Mat(coloredInputOriginal.size(), CvType.CV_8SC3);
@@ -51,12 +57,13 @@ public class ProcessMilkStrip {
         Mat cImg = new Mat(coloredInput.size(), CvType.CV_8UC3);
         coloredInput.copyTo(cImg);
 
+        MatOfPoint rectContour = null;
         for (MatOfPoint c: contours) {
             double area = Imgproc.contourArea(c);
-            if (area > 10000) { // TODO: Can be replaced by percentages of screensize
+            if (area > 100000 && area < 180000) { // TODO: Can be replaced by percentages of screensize
                 // Crop image points
                 points = Imgproc.boundingRect(c);
-                Imgproc.drawContours(cImg, Collections.singletonList(c), -1, new Scalar(255, 255, 0));
+                rectContour = c;
             }
         }
 
@@ -64,7 +71,10 @@ public class ProcessMilkStrip {
             // Crop image to proceed
             coloredInput = coloredInput.submat(points);
             grayInput = grayInput.submat(points);
+
+            Imgproc.drawContours(coloredInputCopy, Collections.singletonList(rectContour), -1, new Scalar(255, 255, 0));
         }
+
         List<Mat> bgr = new ArrayList<>();
         Core.split(coloredInput, bgr);
 
@@ -75,10 +85,9 @@ public class ProcessMilkStrip {
         Imgproc.morphologyEx(thresholded, thresholded, Imgproc.MORPH_OPEN, kernel, new Point(-1, -1), 5);
         Imgproc.findContours(thresholded, contours, mat, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_NONE);
         // Mean values to be stored in a list
-        double[][] means = new double[6][4];
+        double[][] means = new double[6][3];
         int count = 0;
 
-        Mat coloredInputCopy = inputFile.rgba();
 
         for (MatOfPoint c: contours) {
             Point center = new Point();
@@ -92,8 +101,12 @@ public class ProcessMilkStrip {
 
             if (radius[0] > 20 && radius[0] < 40
                     && Math.abs(area - 3.14d * radius[0] * radius[0]) < 1200) { // TODO: Can be replaced by percentages of screensize
-                Point cNew = new Point((center.x + points.x), (center.y + points.y));
-                Imgproc.drawContours(cImg, Collections.singletonList(c), -1, new Scalar(0, 255, 0));
+                Point cNew;
+                if (points != null) {
+                    cNew = new Point((center.x + points.x), (center.y + points.y));
+                } else {
+                    cNew = new Point(center.x, center.y);
+                }
                 Mat mask = new Mat(grayInput.size(), 0);
                 Imgproc.fillPoly(mask, Collections.singletonList(c), new Scalar(255));
                 Imgproc.circle(coloredInputCopy, cNew, (int) radius[0], new Scalar(255, 0, 0));
@@ -110,7 +123,21 @@ public class ProcessMilkStrip {
         if (count != 6) {
             // Wrong count
         } else {
+            double cR = 0;
+            double cG = 0;
+            double cB = 0;
+
             Log.d("OUT", Arrays.toString(means));
+            for (int i=0; i<6; ++i) {
+                cR += means[i][0];
+                cG += means[i][1];
+                cB += means[i][2];
+            }
+            resultR = cR / 6.0;
+            resultB = cG / 6.0;
+            resultG = cB / 6.0;
+
+            System.out.println("R:" + resultR + "-G:" + resultG + "-B:" + resultB);
         }
 
         return coloredInputCopy;
