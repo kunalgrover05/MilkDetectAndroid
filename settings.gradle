@@ -1,3 +1,3 @@
-include ':app', ':opencv'
+include ':app', ':opencv', ':imagePicker', ':sample', ':library'
 include ':openCVLibrary2411'
 include ':openCVLibrary345'

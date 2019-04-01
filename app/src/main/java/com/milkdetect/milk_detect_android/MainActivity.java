@@ -66,20 +66,50 @@ public class MainActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
-        StrictMode.setVmPolicy(builder.build());
 
-        setContentView(R.layout.activity_main);
-        mImage = (ImageView) findViewById(R.id.image);
-        mImage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                //Open Image Picker
-                ImagePicker.pickImage(MainActivity.this, "Select your image:");
-            }
-        });
+        // Get permissions for files and camera storage
+        if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+            Log.v(TAG, "Permission is granted");
+            //File write logic here
+
+            setContentView(R.layout.activity_main);
+            mImage = (ImageView) findViewById(R.id.image);
+            mImage.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    //Open Image Picker
+                    ImagePicker.pickImage(MainActivity.this, "Select your image:");
+                }
+            });
+        } else {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA},
+                    1);
+
+        }
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+            Log.v(TAG, "Permission is granted");
+            //File write logic here
+
+            if (mImage == null) {
+                setContentView(R.layout.activity_main);
+                mImage = (ImageView) findViewById(R.id.image);
+                mImage.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        //Open Image Picker
+                        ImagePicker.pickImage(MainActivity.this, "Select your image:");
+                    }
+                });
+            }
+        }
+    }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);

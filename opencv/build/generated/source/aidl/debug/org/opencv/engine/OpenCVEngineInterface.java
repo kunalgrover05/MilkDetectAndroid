@@ -1,6 +1,6 @@
 /*
  * This file is auto-generated.  DO NOT MODIFY.
- * Original file: /home/kunal/Projects/MilkDetectAndroid/opencv/src/org/opencv/engine/OpenCVEngineInterface.aidl
+ * Original file: /Users/grokunal/MilkDetectAndroid/opencv/src/org/opencv/engine/OpenCVEngineInterface.aidl
  */
 package org.opencv.engine;
 /**
